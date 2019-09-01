@@ -46,7 +46,7 @@ int e_numero (char* string){ //retorna 1 se a string e um numero valido em C, e 
 } 
 
 int e_identificador (char* string){
-  return match(string, "/^[a-zA-Z_][a-zA-Z0-9_]*$/")
+  return match(string, "/^[a-zA-Z_][a-zA-Z0-9_]*$/");
 }
 int busca(char* palavra, int tipo ){  //verifica se a palavra e do determinado tipo. 0 para reservada, 1 para separadores, 2 para operadores aritmeticos, 3 para operadores logicos
     int i;
@@ -78,7 +78,7 @@ int busca(char* palavra, int tipo ){  //verifica se a palavra e do determinado t
 
 
 void lexico(){
-  FILE *codigo_fonte, *sep, *reservadas, *operadores, *simbolos; 
+  FILE *codigo_fonte, *sep, *reservadas, *operadores, *simbolos, *literais, *numeros; 
   codigo_fonte = fopen("codigo.txt", "r");
 
   if (codigo_fonte == NULL) printf("Arquivo nao encontrado\n");
@@ -89,9 +89,11 @@ void lexico(){
   simbolos = fopen("simbolos.txt", "w");
   literais = fopen("literais.txt", "w");
   numeros = fopen("numeros.txt", "w");
-  char[MAX_STRINGS] palavra = "";
+  char palavra[MAX_STRINGS] = "";
   int linha = 0, coluna = 0;
   char ch;
+  char aux[2];
+  aux[1] = '\0';
   token_type* lista_de_tokens;
 
   while((ch = fgetc(codigo_fonte)) != EOF){
@@ -100,14 +102,13 @@ void lexico(){
     buffer[1] = '\0';
    
     if (busca(buffer, 1) == 1){
-      token_type token = malloc (sizeof(token_type));
-      token->tipo = "separador"
+      token_type *token = malloc (sizeof(token_type));
+      token->tipo = "separador";
       token->valor = buffer;
       token->linha = linha;
       token->coluna = coluna; 
       fprintf(sep, "%s", buffer);
-      printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token->tipo, token->valor, token->linha, token->coluna)
-      lista_de_tokens[0] = malloc (sizeof(token_type));
+      printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token->tipo, token->valor, token->linha, token->coluna);
       lista_de_tokens[0] = token;
     }
     else{
@@ -121,22 +122,25 @@ void lexico(){
           coluna = 0;
         } 
         else{
-          strcat(palavra, ch);
+          aux[0] = ch;
+          strcat(palavra, aux);
           ch = fgetc(codigo_fonte);
           coluna++;
           
           if (ch == '\''){    //aspas simples seguidas de aspas simples, char vazio
-            strcat(palavra, ch);
-            token_type token = malloc (sizeof(token_type));
+            aux[0] = ch;
+            strcat(palavra, aux);
+            token_type *token = malloc (sizeof(token_type));
             token->tipo = "literal";
             token->valor = "\'\'";   //caractere vazio
             token->linha = linha;
             token->coluna = coluna; 
             fprintf(sep, "%s", buffer);
-            printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token->tipo, token->valor, token->linha, token->coluna)
+            printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token->tipo, token->valor, token->linha, token->coluna);
          }
          else{
-           strcat(palavra, ch);
+           aux[0] = ch;
+           strcat(palavra, aux);
            ch = fgetc(codigo_fonte);
            coluna++;
            
@@ -146,28 +150,32 @@ void lexico(){
            }
 
            if(ch != '\''){
-             strcat(palavra, ch);
+            aux[0] = ch;
+            strcat(palavra, aux);
              
              do {
                ch = fgetc(codigo_fonte);
-               strcat(palavra, ch);
+               aux[0] = ch;
+               strcat(palavra, aux);
                coluna++;
                
                if (ch == '\n'){
                  linha++;
                  coluna = 0;
                }
-             } while (ch != '\'')
+             } while (ch != '\'');
             
              printf("ERRO LÉXICO EM %d %d, PALAVRA INVALIDA: %s", linha, coluna, ch);
            } else {
-             token_type token = malloc (sizeof(token_type));
+             aux[0] = ch;
+             strcat(palavra, aux);
+             token_type *token = malloc (sizeof(token_type));
              token->tipo = "literal";
-             token->valor = "\'\'";   //caractere vazio
+             token->valor = palavra;   //caractere vazio
              token->linha = linha;
              token->coluna = coluna; 
              fprintf(sep, "%s", buffer);
-             printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token->tipo, token->valor, token->linha, token->coluna)
+             printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token->tipo, token->valor, token->linha, token->coluna);
            }
          }
          
