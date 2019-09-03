@@ -102,13 +102,13 @@ void lexico(){
     buffer[1] = '\0';
    
     if (busca(buffer, 1) == 1){
-      token_type *token = malloc (sizeof(token_type));
-      token->tipo = "separador";
-      token->valor = buffer;
-      token->linha = linha;
-      token->coluna = coluna; 
+      token_type token;
+      strcpy(token.tipo, "separador");
+      strcpy(token.valor, buffer);
+      token.linha = linha;
+      token.coluna = coluna; 
       fprintf(sep, "%s", buffer);
-      printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token->tipo, token->valor, token->linha, token->coluna);
+      printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token.tipo, token.valor, token.linha, token.coluna);
       lista_de_tokens[0] = token;
     }
     else{
@@ -130,13 +130,13 @@ void lexico(){
           if (ch == '\''){    //aspas simples seguidas de aspas simples, char vazio
             aux[0] = ch;
             strcat(palavra, aux);
-            token_type *token = malloc (sizeof(token_type));
-            token->tipo = "literal";
-            token->valor = "\'\'";   //caractere vazio
-            token->linha = linha;
-            token->coluna = coluna; 
+            token_type token;
+            strcpy(token.tipo, "literal");
+            strcpy(token.valor, "\'\'");   //caractere vazio
+            token.linha = linha;
+            token.coluna = coluna; 
             fprintf(sep, "%s", buffer);
-            printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token->tipo, token->valor, token->linha, token->coluna);
+            printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token.tipo, token.valor, token.linha, token.coluna);
          }
          else{
            aux[0] = ch;
@@ -165,17 +165,17 @@ void lexico(){
                }
              } while (ch != '\'');
             
-             printf("ERRO LÉXICO EM %d %d, PALAVRA INVALIDA: %s", linha, coluna, ch);
+            printf("ERRO LÉXICO EM (%d %d), PALAVRA INVALIDA: %s", linha, coluna, palavra);
            } else {
              aux[0] = ch;
              strcat(palavra, aux);
-             token_type *token = malloc (sizeof(token_type));
-             token->tipo = "literal";
-             token->valor = palavra;   //caractere vazio
-             token->linha = linha;
-             token->coluna = coluna; 
+             token_type token;
+             strcpy(token.tipo, "literal");
+             strcpy(token.valor, palavra);   //caractere vazio
+             token.linha = linha;
+             token.coluna = coluna; 
              fprintf(sep, "%s", buffer);
-             printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token->tipo, token->valor, token->linha, token->coluna);
+             printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token.tipo, token.valor, token.linha, token.coluna);
            }
          }
          
@@ -183,12 +183,12 @@ void lexico(){
           palavra[1] = ch;
           palavra[2] = '\'';
           token_type token = malloc (sizeof(token_type));
-          token->tipo = "literal"
-          token->valor = palavra;
-          token->linha = linha;
-          token->coluna = coluna; 
+          token.tipo = "literal"
+          token.valor = palavra;
+          token.linha = linha;
+          token.coluna = coluna; 
           fprintf(sep, "%s", buffer);
-          printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token->tipo, token->valor, token->linha, token->coluna)
+          printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token.tipo, token.valor, token.linha, token.coluna)
           lista_de_tokens[0] = token;*/
         }
       }
