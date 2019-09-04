@@ -152,7 +152,7 @@ void lexico(){
       strcpy(token.valor, palavra);
       token.linha = linha;
       token.coluna = coluna; 
-      fprintf(literais, "%s\n", buffer);
+      fprintf(literais, "%s\n", token.valor);
       printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token.tipo, token.valor, token.linha, token.coluna - strlen(token.valor));
       lista_de_tokens[tamanho_lista_de_tokens++] = token;
       strcpy(palavra, "");
@@ -189,7 +189,7 @@ void lexico(){
       strcpy(token.valor, palavra);
       token.linha = linha;
       token.coluna = coluna; 
-      fprintf(literais, "%s\n", buffer);
+      fprintf(literais, "%s\n", token.valor);
       printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token.tipo, token.valor, token.linha, token.coluna - strlen(token.valor));
       lista_de_tokens[tamanho_lista_de_tokens++] = token;
       strcpy(palavra, "");
@@ -224,7 +224,7 @@ void lexico(){
           strcpy(token.valor, palavra);
           token.linha = linha;
           token.coluna = coluna; 
-          fprintf(numeros, "%s\n", buffer);
+          fprintf(numeros, "%s\n", token.valor);
           printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token.tipo, token.valor, token.linha, token.coluna - strlen(token.valor));
           lista_de_tokens[tamanho_lista_de_tokens++] = token;
           strcpy(palavra, "");
@@ -259,7 +259,7 @@ void lexico(){
           strcpy(token.valor, palavra);
           token.linha = linha;
           token.coluna = coluna; 
-          fprintf(reservadas, "%s\n", buffer);
+          fprintf(reservadas, "%s\n", token.valor);
           printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token.tipo, token.valor, token.linha, token.coluna - strlen(token.valor));
           lista_de_tokens[tamanho_lista_de_tokens++] = token;
           strcpy(palavra, "");
@@ -270,7 +270,7 @@ void lexico(){
           strcpy(token.valor, palavra);
           token.linha = linha;
           token.coluna = coluna; 
-          fprintf(operadores, "%s\n", buffer);
+          fprintf(operadores, "%s\n", token.valor);
           printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token.tipo, token.valor, token.linha, token.coluna - strlen(token.valor));
           lista_de_tokens[tamanho_lista_de_tokens++] = token;
           strcpy(palavra, "");
