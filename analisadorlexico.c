@@ -8,6 +8,7 @@
 #define NUM_LEXEMAS_SEPARADORES 13
 #define NUM_LEXEMAS_OP_ARITMETICOS 12
 #define NUM_LEXEMAS_OP_LOGICOS 9
+#define MAX_TOKENS 12000
 
 
 /*ANALISADOR LÉXICO
@@ -92,14 +93,20 @@ void lexico(){
   char palavra[MAX_STRINGS] = "";
   int linha = 0, coluna = 0;
   char ch;
-  char aux[2];
-  aux[1] = '\0';
-  token_type* lista_de_tokens;
+  token_type lista_de_tokens[MAX_TOKENS];
+  int tamanho_lista_de_tokens = 0;
+  int cabou_arquivo = 0;
 
   while((ch = fgetc(codigo_fonte)) != EOF){
     char buffer[2];
     buffer[0] = ch;
     buffer[1] = '\0';
+
+    coluna++;
+    if(ch == '\n'){
+      coluna = 0;
+      linha++;
+    }
    
     if (busca(buffer, 1) == 1){
       token_type token;
@@ -107,94 +114,179 @@ void lexico(){
       strcpy(token.valor, buffer);
       token.linha = linha;
       token.coluna = coluna; 
-      fprintf(sep, "%s", buffer);
-      printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token.tipo, token.valor, token.linha, token.coluna);
-      lista_de_tokens[0] = token;
+      int aux_linha = token.linha;
+      int aux_coluna = token.coluna - strlen(token.valor);
+      if (buffer[0] == '\n') {
+        strcpy(token.valor, "\\n");
+        aux_coluna = token.coluna;
+      }  
+      fprintf(sep, "%s\n", token.valor);
+      printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token.tipo, token.valor, aux_linha, aux_coluna);
+      lista_de_tokens[tamanho_lista_de_tokens++] = token;
     }
-    else{
+    
+    else if(ch == '\"'){
+      buffer[0] = ch;
+      strcat(palavra, buffer);
+      
+      do{
+        if((ch = fgetc(codigo_fonte)) == EOF) {
+          cabou_arquivo = 1;
+          break;
+        }
+        coluna++;
+        if (ch == '\n'){
+          linha++;
+          coluna = 0;
+        }
+        buffer[0] = ch;
+        strcat(palavra, buffer);
+      } while(ch != '\"');
+      
+      if(cabou_arquivo == 1){
+        printf("ERRO LEXICO: Sequencia invalida em (%d, %d): %s",linha, coluna - strlen(palavra), palavra);
+        break;
+      } 
+      token_type token;
+      strcpy(token.tipo, "literal");
+      strcpy(token.valor, palavra);
+      token.linha = linha;
+      token.coluna = coluna; 
+      fprintf(literais, "%s\n", buffer);
+      printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token.tipo, token.valor, token.linha, token.coluna - strlen(token.valor));
+      lista_de_tokens[tamanho_lista_de_tokens++] = token;
+      strcpy(palavra, "");
+    }
 
-      if (ch == '\''){   //pegou aspa simples
-        ch = fgetc(codigo_fonte);
+    else if(ch == '\''){
+      buffer[0] = ch;
+      strcat(palavra, buffer);
+      
+      do{
+        
+        if((ch = fgetc(codigo_fonte)) == EOF) {
+          cabou_arquivo = 1;
+          break;
+        }
+        
         coluna++;
         
-        if (ch == '\n'){    //aspas simples e depois pula linha
-          printf("ERRO LEXICO EM (%d, %d), PALAVRA INVALIDA: %c", linha++, coluna - 1, ch);
+        if (ch == '\n'){
+          linha++;
           coluna = 0;
-        } 
-        else{
-          aux[0] = ch;
-          strcat(palavra, aux);
-          ch = fgetc(codigo_fonte);
+        }
+        buffer[0] = ch;
+        strcat(palavra, buffer);
+      
+      } while(ch != '\'');
+      
+      if(cabou_arquivo == 1){
+        printf("ERRO LEXICO: Sequencia invalida em (%d, %d): %s",linha, coluna - strlen(palavra), palavra);
+        break;
+      }
+      token_type token;
+      strcpy(token.tipo, "literal");
+      strcpy(token.valor, palavra);
+      token.linha = linha;
+      token.coluna = coluna; 
+      fprintf(literais, "%s\n", buffer);
+      printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token.tipo, token.valor, token.linha, token.coluna - strlen(token.valor));
+      lista_de_tokens[tamanho_lista_de_tokens++] = token;
+      strcpy(palavra, "");
+    
+    } else if ((ch >= '0' && ch <= '9')){
+        
+        buffer[0] = ch;
+        strcat(palavra, ch);
+        
+        while(true){
+         
+          if((ch = fgetc(codigo_fonte)) == EOF) 
+            break;
+
+          buffer[0] = ch;
           coluna++;
           
-          if (ch == '\''){    //aspas simples seguidas de aspas simples, char vazio
-            aux[0] = ch;
-            strcat(palavra, aux);
-            token_type token;
-            strcpy(token.tipo, "literal");
-            strcpy(token.valor, "\'\'");   //caractere vazio
-            token.linha = linha;
-            token.coluna = coluna; 
-            fprintf(sep, "%s", buffer);
-            printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token.tipo, token.valor, token.linha, token.coluna);
-         }
-         else{
-           aux[0] = ch;
-           strcat(palavra, aux);
-           ch = fgetc(codigo_fonte);
-           coluna++;
-           
-           if (ch == '\n'){
-             coluna = 0;
-             linha++;
-           }
+          if (ch == '\n'){
+            linha++;
+            coluna = 0;
+          }
+          
+          if(busca(buffer, 1) == 1)
+            break;
 
-           if(ch != '\''){
-            aux[0] = ch;
-            strcat(palavra, aux);
-             
-             do {
-               ch = fgetc(codigo_fonte);
-               aux[0] = ch;
-               strcat(palavra, aux);
-               coluna++;
-               
-               if (ch == '\n'){
-                 linha++;
-                 coluna = 0;
-               }
-             } while (ch != '\'');
-            
-            printf("ERRO LÉXICO EM (%d %d), PALAVRA INVALIDA: %s", linha, coluna, palavra);
-           } else {
-             aux[0] = ch;
-             strcat(palavra, aux);
-             token_type token;
-             strcpy(token.tipo, "literal");
-             strcpy(token.valor, palavra);   //caractere vazio
-             token.linha = linha;
-             token.coluna = coluna; 
-             fprintf(sep, "%s", buffer);
-             printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token.tipo, token.valor, token.linha, token.coluna);
-           }
-         }
-         
-          /*palavra[0] = '\'';
-          palavra[1] = ch;
-          palavra[2] = '\'';
-          token_type token = malloc (sizeof(token_type));
-          token.tipo = "literal"
-          token.valor = palavra;
+          strcat(palavra, ch);          
+        }
+
+        if(e_numero(palavra)){
+          token_type token;
+          strcpy(token.tipo, "numero");
+          strcpy(token.valor, palavra);
           token.linha = linha;
           token.coluna = coluna; 
-          fprintf(sep, "%s", buffer);
-          printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token.tipo, token.valor, token.linha, token.coluna)
-          lista_de_tokens[0] = token;*/
+          fprintf(numeros, "%s\n", buffer);
+          printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token.tipo, token.valor, token.linha, token.coluna - strlen(token.valor));
+          lista_de_tokens[tamanho_lista_de_tokens++] = token;
+          strcpy(palavra, "");
         }
-      }
+
+
+    } else{
+      buffer[0] = ch;
+      strcat(palavra, ch);
+      while(true){
+         
+          if((ch = fgetc(codigo_fonte)) == EOF) 
+            break;
+
+          buffer[0] = ch;
+          coluna++;
+          
+          if (ch == '\n'){
+            linha++;
+            coluna = 0;
+          }
+          
+          if(busca(buffer, 1) == 1)
+            break;
+
+          strcat(palavra, ch);          
+        }
+
+      if (busca(palavra, 0){
+          token_type token;
+          strcpy(token.tipo, "palavra reservada");
+          strcpy(token.valor, palavra);
+          token.linha = linha;
+          token.coluna = coluna; 
+          fprintf(reservadas, "%s\n", buffer);
+          printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token.tipo, token.valor, token.linha, token.coluna - strlen(token.valor));
+          lista_de_tokens[tamanho_lista_de_tokens++] = token;
+          strcpy(palavra, "");
+     
+      } else if (busca(palavra, 2) == 1 || busca(palavra, 3) == 1){
+          token_type token;
+          strcpy(token.tipo, "operador");
+          strcpy(token.valor, palavra);
+          token.linha = linha;
+          token.coluna = coluna; 
+          fprintf(operadores, "%s\n", buffer);
+          printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token.tipo, token.valor, token.linha, token.coluna - strlen(token.valor));
+          lista_de_tokens[tamanho_lista_de_tokens++] = token;
+          strcpy(palavra, "");
+        }
+        else{
+          printf("ERRO LEXICO: Sequencia invalida em (%d %d): %s",linha, coluna - strlen(palavra), palavra);
+          strcpy(palavra, "");
+        }
+
+      } 
+    }
+         
+
+       
       
 
-    }
   }
 
 }
