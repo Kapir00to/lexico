@@ -1,0 +1,8 @@
+include
+define
+int
+int
+float
+long
+if
+return

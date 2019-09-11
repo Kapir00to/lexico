@@ -1,0 +1,16 @@
+stdio.h
+PI
+main
+b
+c
+a
+b
+c
+printf
+a
+b
+c
+c
+funcao
+a
+b
