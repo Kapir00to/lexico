@@ -2,13 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <regex.h>
+#include "analisadorlexico.h"
 
-#define MAX_STRINGS 256
-#define NUM_LEXEMAS_RESERVADAS 26
-#define NUM_LEXEMAS_SEPARADORES 13
-#define NUM_LEXEMAS_OP_ARITMETICOS 12
-#define NUM_LEXEMAS_OP_LOGICOS 10
-#define MAX_TOKENS 12000
 
 
 /*ANALISADOR LÉXICO
@@ -19,14 +14,7 @@
   O seguinte código é livre para uso, citação e compartilhamento, 
   desde que mantida sua fonte e seu autor. */
 
-typedef struct tok{
-    char tipo[MAX_STRINGS];
-    char valor[MAX_STRINGS];
-    int linha;
-    int coluna;
-} token_type;
 
-// regex para identificador: /^[a-zA-Z_][a-zA-Z0-9_]*$/
 char **tabela_simbolos;
 char palavras_reservadas[NUM_LEXEMAS_RESERVADAS][MAX_STRINGS] = {"int", "char", "float", "long", "include", "define", "struct", "return", "if", "break", "continue", "for", "while", "do", "switch", "case", "else", "typedef", "define", "NULL", "bool", "EOF", "void", "FILE", "const"};
 char separadores[NUM_LEXEMAS_SEPARADORES][2] = {";","[","]",",","(",")", "{", "}","\n", " ", "\t","#", "&"};
@@ -46,7 +34,7 @@ int e_numero (char* string){ //retorna 1 se a string e um numero valido em C, e 
     return match(string, "[0-9]+|[.][0-9]+|[0-9]+[.][0-9]+");
 } 
 
-int e_identificador (char* string){
+int e_identificador (char* string){ ////retorna 1 se a string e um identificador valido em C, e 0 se nao e valido.
   return match(string, "^[a-zA-Z_][a-zA-Z0-9_.$]*$");
 }
 int busca(char* palavra, int tipo ){  //verifica se a palavra e do determinado tipo. 0 para reservada, 1 para separadores, 2 para operadores aritmeticos, 3 para operadores logicos
@@ -78,9 +66,11 @@ int busca(char* palavra, int tipo ){  //verifica se a palavra e do determinado t
 }
 
 
-void lexico(){
-  FILE *codigo_fonte, *sep, *reservadas, *operadores, *identificadores, *literais, *numeros; 
-  codigo_fonte = fopen("codigo.c", "r");
+
+
+void lexico(char arqv[]){
+  FILE *codigo_fonte, *sep, *reservadas, *operadores, *identificadores, *literais, *numeros, *tokens; 
+  codigo_fonte = fopen(arqv, "r");
 
   if (codigo_fonte == NULL){
     printf("Arquivo nao encontrado\n");
@@ -93,8 +83,9 @@ void lexico(){
   identificadores = fopen("identificadores.txt", "w");
   literais = fopen("literais.txt", "w");
   numeros = fopen("numeros.txt", "w");
+  tokens = fopen("tokens.txt", "w");
   char palavra[MAX_STRINGS] = "";
-  int linha = 0, coluna = 0;
+  int linha = 0, coluna = -1;
   char ch;
   token_type lista_de_tokens[MAX_TOKENS];
   int tamanho_lista_de_tokens = 0;
@@ -105,51 +96,57 @@ void lexico(){
     buffer[0] = ch;
     buffer[1] = '\0';
     strcat(palavra, buffer);
-
     coluna++;
-    if(ch == '\n'){
-      coluna = 0;
-      linha++;
-    }
+
+    
    
-    if (busca(palavra, 1) == 1){
+    if (busca(palavra, 1) == 1){  //verificada se o caractere lido um separador, se sim ira salvar o token
     
       token_type token;
       strcpy(token.tipo, "separador");
       strcpy(token.valor, palavra);
       token.linha = linha;
       token.coluna = coluna; 
-      int aux_linha = token.linha;
-      int aux_coluna = token.coluna;
-      if (buffer[0] == '\n') {
-        strcpy(token.valor, "\\n");
-        aux_coluna = token.coluna;
+
+      if(ch == '\n'){
+      
+      coluna = 0;
+      strcpy(token.valor, "\\n");
+      
+      } else if (buffer[0] == ' ') {
+       
+        strcpy(token.valor, "espaco");
+      
       }  
       fprintf(sep, "%s\n", token.valor);
-      printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token.tipo, token.valor, aux_linha, aux_coluna);
+      printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token.tipo, token.valor, token.linha, token.coluna);
       lista_de_tokens[tamanho_lista_de_tokens++] = token;
+      fprintf(tokens, "%s %s %d %d\n", token.tipo, token.valor, token.linha, token.coluna);
       strcpy(palavra, "");
       
     }  
     
-    else if (busca(buffer, 2) == 1 || busca(buffer, 3) == 1){
+    else if (busca(buffer, 2) == 1 || busca(buffer, 3) == 1){ //verifica se o caractere e um operador. Se sim, e verificado se e um operador de um ou dois caracteres
       fpos_t pos;
       fgetpos(codigo_fonte, &pos);
       char palavra_auxiliar[MAX_STRINGS];
       strcat(palavra_auxiliar, buffer);      
       strcat(palavra, buffer);
-      int coluna_auxiliar = coluna;
-      int linha_auxiliar = linha;
+      coluna++;
       int flag = 0;
       
       if(ch == '/'){          //capturando comentarios
         ch = fgetc(codigo_fonte);
+        coluna++;
+        
         if (ch == '/'){
-          coluna += 2;
+          coluna++;
+        
           while(ch != '\n'){
             ch = fgetc(codigo_fonte);
             coluna++;          
           }
+        
           coluna = 0;
           linha++;
           flag = 1;
@@ -177,6 +174,10 @@ void lexico(){
               }
             }
           }
+        } else{
+
+          fseek(codigo_fonte, -1, SEEK_CUR);
+
         }
       }
       
@@ -188,7 +189,7 @@ void lexico(){
 
       ch = fgetc(codigo_fonte);
      
-      if (ch == EOF){     
+      if (ch == EOF){     //ultimo caractere
         token_type token;
         strcpy(token.tipo, "operador");
         strcpy(token.valor, palavra);
@@ -197,6 +198,7 @@ void lexico(){
         fprintf(operadores, "%s\n", token.valor);
         printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token.tipo, token.valor, token.linha, token.coluna);
         lista_de_tokens[tamanho_lista_de_tokens++] = token;
+        fprintf(tokens, "%s %s %d %d\n", token.tipo, token.valor, token.linha, token.coluna);
         strcpy(palavra, "");
         strcpy(palavra_auxiliar,"");
         break;
@@ -204,68 +206,80 @@ void lexico(){
 
       buffer[0] = ch;
       strcat(palavra_auxiliar, buffer);
-      coluna_auxiliar++;
-      
+      coluna++;
+      int coluna_aux = coluna;
       if(ch == '\n'){
-        coluna_auxiliar = 0;
-        linha_auxiliar++;
+        coluna = 0;
+        linha++;
       }
 
-      if (busca(palavra_auxiliar, 2) == 1 || busca(palavra_auxiliar, 3) == 1){
+      if (busca(palavra_auxiliar, 2) == 1 || busca(palavra_auxiliar, 3) == 1){  //operador com 2 caracteres
        
         token_type token;
         strcpy(token.tipo, "operador");
         strcpy(token.valor, palavra_auxiliar);
-        token.linha = linha_auxiliar;
-        token.coluna = coluna_auxiliar;      
+        token.linha = linha;
+        token.coluna = coluna - 2;      
         fprintf(operadores, "%s\n", token.valor);
         printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token.tipo, token.valor, token.linha, token.coluna);
         lista_de_tokens[tamanho_lista_de_tokens++] = token;
+        fprintf(tokens, "%s %s %d %d\n", token.tipo, token.valor, token.linha, token.coluna);
         strcpy(palavra_auxiliar,"");
         strcpy(palavra,"");
-        linha = linha_auxiliar;
-        coluna = coluna_auxiliar;
-      } else{
+      } else{         //operador com 1 caractere
         
         token_type token;
         strcpy(token.tipo, "operador");
         palavra[strlen(palavra) - 1] = '\0';
         strcpy(token.valor, palavra);
-        token.linha = linha_auxiliar;
-        token.coluna = coluna_auxiliar;      
+        
+        if (ch != '\n'){
+          token.linha = linha;
+          token.coluna = coluna - 2;
+        } else{
+          token.linha = linha - 1;
+          token.coluna = coluna_aux - 3;
+        }
+        
         fprintf(operadores, "%s\n", token.valor);
-        printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token.tipo, token.valor, token.linha, coluna);
+        printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token.tipo, token.valor, token.linha, token.coluna);
         lista_de_tokens[tamanho_lista_de_tokens++] = token;
+        fprintf(tokens, "%s %s %d %d\n", token.tipo, token.valor, token.linha, token.coluna);
         strcpy(palavra_auxiliar, ""); 
         strcpy(palavra, "");
         fsetpos(codigo_fonte, &pos);
       }
 
-
-
     }
     
-    else if(ch == '\"'){
+    else if(ch == '\"'){  //verifica se ira comecar um literal a partir do caractere ch
       int linha_token_inicial = linha;
       int coluna_token_inicial = coluna;
+     
       do{
+     
         if((ch = fgetc(codigo_fonte)) == EOF) {
           cabou_arquivo = 1;
           break;
         }
+     
         coluna++;
+     
         if (ch == '\n'){
           linha++;
           coluna = 0;
         }
+     
         buffer[0] = ch;
         strcat(palavra, buffer);
+     
       } while(ch != '\"');
       
-      if(cabou_arquivo == 1){
+      if(cabou_arquivo == 1){ //da erro caso o codigo acabe antes de se fechar as aspas do literal
         printf("ERRO LEXICO: Sequencia invalida em (%d, %d): %s - FLAG 1\n",linha, coluna - strlen(palavra), palavra);
         break;
       } 
+            //guardando o literal
       token_type token;
       strcpy(token.tipo, "literal");
       strcpy(token.valor, palavra);
@@ -274,10 +288,12 @@ void lexico(){
       fprintf(literais, "%s\n", token.valor);
       printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token.tipo, token.valor, token.linha, token.coluna);
       lista_de_tokens[tamanho_lista_de_tokens++] = token;
+      fprintf(tokens, "%s %s %d %d\n", token.tipo, token.valor, token.linha, token.coluna);
       strcpy(palavra, "");
+    
     }
 
-    else if(ch == '\''){
+    else if(ch == '\''){    //verifica se e um literal de aspas simples, ou seja, char(nao verifica se as aspas simples representa mais de um caractere)
       int linha_token_inicial = linha;
       int coluna_token_inicial = coluna;
       do{
@@ -298,10 +314,11 @@ void lexico(){
       
       } while(ch != '\'');
       
-      if(cabou_arquivo == 1){
+      if(cabou_arquivo == 1){ //verifica se o codigo acaba antes de ser fechada a aspa
         printf("ERRO LEXICO: Sequencia invalida em (%d, %d): %s - FLAG 2\n",linha, coluna - strlen(palavra), palavra);
         break;
       }
+      
       token_type token;
       strcpy(token.tipo, "literal");
       strcpy(token.valor, palavra);
@@ -310,10 +327,14 @@ void lexico(){
       fprintf(literais, "%s\n", token.valor);
       printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token.tipo, token.valor, token.linha, token.coluna);
       lista_de_tokens[tamanho_lista_de_tokens++] = token;
+      fprintf(tokens, "%s %s %d %d\n", token.tipo, token.valor, token.linha, token.coluna);
       strcpy(palavra, "");    
-    } else if ((ch >= '0' && ch <= '9')){
+
+    } else if ((ch >= '0' && ch <= '9')){ //verifica se e um numero
+     
       int linha_token_inicial = linha;
       int coluna_token_inicial = coluna;
+     
         while(1){
          
           if((ch = fgetc(codigo_fonte)) == EOF) 
@@ -322,12 +343,8 @@ void lexico(){
           buffer[0] = ch;
           coluna++;
           
-          if (ch == '\n'){
-            linha++;
-            coluna = 0;
-          }
           
-        if((ch >= 'a' && ch <= 'z')){
+        if((ch >= 'a' && ch <= 'z')){ //numero seguido de letra, sequencia invalida
           buffer[0] = ch;
           strcat(palavra, buffer);
           printf("ERRO LEXICO: Sequencia invalida em (%d %d): %s - FLAG 3\n",linha, coluna - strlen(palavra), palavra);
@@ -335,13 +352,13 @@ void lexico(){
           break;
         }  
 
-          if(!(ch >= '0' && ch <= '9') && ch != '.')
+          if(!(ch >= '0' && ch <= '9') && ch != '.')    //caso o numero acabe
             break;
 
           strcat(palavra, buffer);          
         }
 
-        if(e_numero(palavra)){
+        if(e_numero(palavra)){    //registra o token do numero
           token_type token;
           strcpy(token.tipo, "numero");
           strcpy(token.valor, palavra);
@@ -350,12 +367,13 @@ void lexico(){
           fprintf(numeros, "%s\n", token.valor);
           printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token.tipo, token.valor, token.linha, token.coluna);
           lista_de_tokens[tamanho_lista_de_tokens++] = token;
+          fprintf(tokens, "%s %s %d %d\n", token.tipo, token.valor, token.linha, token.coluna);
           strcpy(palavra, "");
           fseek(codigo_fonte, -1, SEEK_CUR);
         }
 
 
-    } else{
+    } else{   //se nao cair em nenhum dos ifs, vai verificar se e uma palavra reservada ou identificador
       
       int linha_token_inicial = linha;
       int coluna_token_inicial = coluna;
@@ -368,11 +386,6 @@ void lexico(){
         buffer[0] = ch;
         coluna++;
         
-        if (ch == '\n'){
-          linha++;
-          coluna = 0;
-        }
-        
         if((busca(buffer, 0) == 1) || (busca(buffer, 1) == 1) || (busca(buffer, 2) == 1)  || (busca(buffer, 3) == 1))
           break;
 
@@ -380,7 +393,7 @@ void lexico(){
               
       }
 
-      if (busca(palavra, 0) == 1){
+      if (busca(palavra, 0) == 1){ //verifica se a palavra esta na lista das palavras reservadas
         
           token_type token;
           strcpy(token.tipo, "palavra reservada");
@@ -390,25 +403,27 @@ void lexico(){
           fprintf(reservadas, "%s\n", token.valor);
           printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token.tipo, token.valor, token.linha, token.coluna);
           lista_de_tokens[tamanho_lista_de_tokens++] = token;
+          fprintf(tokens, "%s %s %d %d\n", token.tipo, token.valor, token.linha, token.coluna);
           strcpy(palavra, "");
           fseek(codigo_fonte, -1, SEEK_CUR);
      
       } 
-        else if (e_identificador(palavra)){
+        else if (e_identificador(palavra)){ //verifica se e id, se for, registra o id
          
           token_type token;
           strcpy(token.tipo, "identificador");
           strcpy(token.valor, palavra);
           token.linha = linha_token_inicial;
-          token.coluna = coluna_token_inicial; 
+          token.coluna = coluna_token_inicial - 1; 
           fprintf(identificadores, "%s\n", token.valor);
           printf("Tipo: %s  Valor: %s  Linha: %d  Coluna: %d\n", token.tipo, token.valor, token.linha, token.coluna);
           lista_de_tokens[tamanho_lista_de_tokens++] = token;
+          fprintf(tokens, "%s %s %d %d\n", token.tipo, token.valor, token.linha, token.coluna);
           strcpy(palavra, "");
           fseek(codigo_fonte, -1, SEEK_CUR);
 
         } else{
-
+          //erro caso a palavra nao se encaixe em nenhuma das definicoes
           printf("ERRO LEXICO: Sequencia invalida em (%d %d): %s - FLAG 3\n",linha_token_inicial, coluna_token_inicial, palavra);
           strcpy(palavra, "");
           fseek(codigo_fonte, -1, SEEK_CUR);
@@ -427,9 +442,9 @@ void lexico(){
 }
 
 
-int main(){
+int main(int argc, char* argv[]){
 
-    lexico();
+    lexico(argv[2]);
 
     return 0;
 }

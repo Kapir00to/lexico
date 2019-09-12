@@ -1,9 +1,9 @@
 stdio.h
 PI
 main
-b
-c
-a
+b_a
+c.c
+a_a.c
 b
 c
 printf
