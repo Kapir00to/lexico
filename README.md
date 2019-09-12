@@ -1,14 +1,14 @@
 # lexico
-# Sobre: 
+# Sobre
 Analisador Léxico de um código em C.
 
-# Autor:
+# Autor
 Lucas Rezende Bruno
 
-# Data:
+# Data
 11 de setembro de 2019 (ultimo commit)
 
-# Propósito:
+# Propósito
 O código foi feito como trabalho prático da disciplina de Compiladores, ministrada pelo professor Flavio Schiavoni do curso de Ciência da Computação da Universidade Federal de São João del Rei (UFSJ)
 
 # Instruções para compilar
@@ -19,7 +19,7 @@ make
 Para a execução do código no Linux, deve ser executado a seguinte instrução (subsituir nome_do_codigo_de_teste pelo nome do codigo que deseja ser analisado junto com o formato do mesmo):
 ./lexico 1 nome_do_codigo_de_teste
 
-# Exemplos:
+# Exemplos
 No teste executado, foi analisado o seguinte código:
 
 #do<stdio.h>
