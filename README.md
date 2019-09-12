@@ -1,4 +1,3 @@
-# lexico
 # Sobre
 Analisador Léxico de um código em C.
 
